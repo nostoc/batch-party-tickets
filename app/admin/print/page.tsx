@@ -5,10 +5,22 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/utils/supabase';
 import QRCode from 'qrcode';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 export default function PrintTickets() {
     const [tickets, setTickets] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const router = useRouter();
+
+    useEffect(() => {
+        const checkUser = async () => {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) {
+                router.push('/login');
+            }
+        };
+        checkUser();
+    }, [router]);
 
     useEffect(() => {
         const fetchAndGenerate = async () => {

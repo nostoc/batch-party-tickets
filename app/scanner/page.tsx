@@ -3,11 +3,24 @@
 
 import { useEffect, useState, useRef } from 'react';
 import { Html5QrcodeScanner } from 'html5-qrcode';
+import { useRouter } from 'next/navigation';
+import { supabase } from '@/utils/supabase';
 
 export default function Scanner() {
     const [scanResult, setScanResult] = useState<{ status: 'success' | 'error', message: string } | null>(null);
     const [isScanning, setIsScanning] = useState(true);
     const scannerRef = useRef<Html5QrcodeScanner | null>(null);
+    const router = useRouter();
+
+    useEffect(() => {
+        const checkUser = async () => {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) {
+                router.push('/login');
+            }
+        };
+        checkUser();
+    }, [router]);
 
     useEffect(() => {
         // Only initialize the scanner if we are in "scanning" mode
@@ -35,9 +48,13 @@ export default function Scanner() {
         setIsScanning(false);
 
         try {
+            const { data: { session } } = await supabase.auth.getSession();
             const res = await fetch('/api/validate', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${session?.access_token}`
+                },
                 body: JSON.stringify({ ticketId: decodedText }),
             });
 

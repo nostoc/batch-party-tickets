@@ -4,6 +4,17 @@ import { supabase } from '@/utils/supabase';
 
 export async function POST(request: Request) {
     try {
+        const authHeader = request.headers.get('Authorization');
+        if (!authHeader) {
+            return NextResponse.json({ error: 'Unauthorized access' }, { status: 401 });
+        }
+
+        const token = authHeader.replace('Bearer ', '');
+        const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+
+        if (authError || !user) {
+            return NextResponse.json({ error: 'Invalid or expired token' }, { status: 401 });
+        }
         const { ticketId } = await request.json();
 
         if (!ticketId) {

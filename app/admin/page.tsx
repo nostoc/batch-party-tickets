@@ -4,6 +4,7 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/utils/supabase';
+import { useRouter } from 'next/navigation';
 
 export default function AdminDashboard() {
     const [guests, setGuests] = useState<any[]>([]);
@@ -12,6 +13,17 @@ export default function AdminDashboard() {
     const [notes, setNotes] = useState('');
     const [loading, setLoading] = useState(false);
     const [processingId, setProcessingId] = useState<string | null>(null);
+    const router = useRouter();
+
+    useEffect(() => {
+        const checkUser = async () => {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) {
+                router.push('/login');
+            }
+        };
+        checkUser();
+    }, [router]);
 
     // Fetch guests when the page loads
     const fetchGuests = async () => {
@@ -29,9 +41,13 @@ export default function AdminDashboard() {
         e.preventDefault();
         setLoading(true);
 
+        const { data: { session } } = await supabase.auth.getSession();
         const res = await fetch('/api/guests', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${session?.access_token}`
+            },
             body: JSON.stringify({ name, email, notes }),
         });
 
@@ -51,12 +67,15 @@ export default function AdminDashboard() {
 
         setProcessingId(guestId);
 
+        const { data: { session } } = await supabase.auth.getSession();
         const res = await fetch('/api/tickets', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${session?.access_token}`
+            },
             body: JSON.stringify({ guestId, name, email }),
         });
-
         if (res.ok) {
             alert('Ticket sent successfully!');
             fetchGuests(); // Refresh the list
